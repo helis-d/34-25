@@ -10,6 +10,20 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication and session operations
+  - name: feed
+    description: Post feeds
+  - name: posts
+    description: Post operations
+  - name: comments
+    description: Comment operations
+  - name: profiles
+    description: User profiles
+  - name: search
+    description: Search operations
+  - name: storage
+    description: Media upload operations
 paths:
   /healthz:
     get:
@@ -24,7 +38,372 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current signed-in user
+      responses:
+        "200":
+          description: Current user, or null when signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpInput"
+      responses:
+        "201":
+          description: Created session and user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /auth/login:
+    post:
+      operationId: logIn
+      tags: [auth]
+      summary: Sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Created session and user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/logout:
+    post:
+      operationId: logOut
+      tags: [auth]
+      summary: Sign out
+      responses:
+        "204":
+          description: Signed out
+  /feed:
+    get:
+      operationId: getFeed
+      tags: [feed]
+      summary: List posts for a feed
+      parameters:
+        - $ref: "#/components/parameters/Section"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated post feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedResponse"
+  /posts:
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /posts/{postId}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get a post and its discussion
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Post detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePost
+      tags: [posts]
+      summary: Update a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdate"
+      responses:
+        "200":
+          description: Updated post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Soft-delete a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "204":
+          description: Deleted
+  /posts/{postId}/vote:
+    post:
+      operationId: voteOnPost
+      tags: [posts]
+      summary: Toggle an upvote on a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Updated vote state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteResponse"
+  /posts/{postId}/comments:
+    get:
+      operationId: getComments
+      tags: [comments]
+      summary: List comments for a post
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Nested comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Add a comment or reply
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+  /comments/{commentId}:
+    patch:
+      operationId: updateComment
+      tags: [comments]
+      summary: Update a comment
+      parameters:
+        - $ref: "#/components/parameters/CommentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdate"
+      responses:
+        "200":
+          description: Updated comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+    delete:
+      operationId: deleteComment
+      tags: [comments]
+      summary: Soft-delete a comment
+      parameters:
+        - $ref: "#/components/parameters/CommentId"
+      responses:
+        "204":
+          description: Deleted
+  /comments/{commentId}/vote:
+    post:
+      operationId: voteOnComment
+      tags: [comments]
+      summary: Toggle an upvote on a comment
+      parameters:
+        - $ref: "#/components/parameters/CommentId"
+      responses:
+        "200":
+          description: Updated vote state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteResponse"
+  /profiles/{username}:
+    get:
+      operationId: getProfile
+      tags: [profiles]
+      summary: Get a user profile
+      parameters:
+        - $ref: "#/components/parameters/Username"
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /search:
+    get:
+      operationId: search
+      tags: [search]
+      summary: Search posts and usernames
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostListItem"
+  /reports:
+    post:
+      operationId: createReport
+      tags: [posts]
+      summary: Report a post or comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "201":
+          description: Report recorded
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned media upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadInput"
+      responses:
+        "200":
+          description: Presigned upload information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResponse"
 components:
+  parameters:
+    PostId:
+      name: postId
+      in: path
+      required: true
+      schema:
+        type: string
+    CommentId:
+      name: commentId
+      in: path
+      required: true
+      schema:
+        type: string
+    Username:
+      name: username
+      in: path
+      required: true
+      schema:
+        type: string
+    Section:
+      name: section
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [top, new, ask, show]
+        default: top
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 25
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +412,291 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    User:
+      type: object
+      required: [id, username, createdAt]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        karma:
+          type: integer
+    CurrentUserResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: "null"
+    SignUpInput:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: "^[A-Za-z0-9_-]+$"
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+    Author:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+        id:
+          type: string
+    PostListItem:
+      type: object
+      required: [id, type, title, author, score, commentCount, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [discuss, ask, show]
+        title:
+          type: string
+        author:
+          $ref: "#/components/schemas/Author"
+        score:
+          type: integer
+        commentCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        userVoted:
+          type: boolean
+        url:
+          type: ["string", "null"]
+    FeedResponse:
+      type: object
+      required: [items, page, pageSize, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostListItem"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        hasMore:
+          type: boolean
+    PostInput:
+      type: object
+      required: [type, title, content]
+      properties:
+        type:
+          type: string
+          enum: [discuss, ask, show]
+        title:
+          type: string
+          minLength: 3
+          maxLength: 300
+        content:
+          type: string
+          maxLength: 50000
+        url:
+          type: ["string", "null"]
+          maxLength: 2000
+        mediaPath:
+          type: ["string", "null"]
+    PostUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 300
+        content:
+          type: string
+          maxLength: 50000
+        url:
+          type: ["string", "null"]
+        mediaPath:
+          type: ["string", "null"]
+    Post:
+      allOf:
+        - $ref: "#/components/schemas/PostListItem"
+        - type: object
+          required: [content, updatedAt]
+          properties:
+            content:
+              type: string
+            updatedAt:
+              type: string
+              format: date-time
+            media:
+              oneOf:
+                - $ref: "#/components/schemas/Media"
+                - type: "null"
+    PostDetail:
+      allOf:
+        - $ref: "#/components/schemas/Post"
+        - type: object
+          required: [comments]
+          properties:
+            comments:
+              type: array
+              items:
+                $ref: "#/components/schemas/Comment"
+    Media:
+      type: object
+      required: [path, contentType, altText]
+      properties:
+        path:
+          type: string
+        contentType:
+          type: string
+        altText:
+          type: string
+        width:
+          type: ["integer", "null"]
+        height:
+          type: ["integer", "null"]
+    CommentInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        parentId:
+          type: ["string", "null"]
+    CommentUpdate:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 20000
+    Comment:
+      type: object
+      required: [id, content, author, score, createdAt, updatedAt, deleted, depth, userVoted]
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        author:
+          $ref: "#/components/schemas/Author"
+        score:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deleted:
+          type: boolean
+        depth:
+          type: integer
+        userVoted:
+          type: boolean
+    VoteResponse:
+      type: object
+      required: [voted, score]
+      properties:
+        voted:
+          type: boolean
+        score:
+          type: integer
+    Profile:
+      type: object
+      required: [user, postCount, commentCount, karma, posts, comments]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        postCount:
+          type: integer
+        commentCount:
+          type: integer
+        karma:
+          type: integer
+        posts:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostListItem"
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+    ReportInput:
+      type: object
+      required: [reason, targetType, targetId]
+      properties:
+        reason:
+          type: string
+          enum: [spam, harassment, illegal, nsfw, other]
+        targetType:
+          type: string
+          enum: [post, comment]
+        targetId:
+          type: string
+        details:
+          type: ["string", "null"]
+          maxLength: 1000
+    UploadInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp, image/gif]
+    UploadResponse:
+      type: object
+      required: [uploadUrl, objectPath]
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+        objectPath:
+          type: string
 

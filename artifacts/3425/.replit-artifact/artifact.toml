@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "3425"
+description = "A fast, quiet discussion platform for sharing ideas, asking questions, and showing things you've built."
+version = "1.0.0"
+id = "artifacts/3425"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18247
+
+[services.development]
+run = "pnpm --filter @workspace/3425 run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/3425", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/3425/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18247"
+BASE_PATH = "/"

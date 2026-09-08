@@ -1,0 +1,1 @@
+- [App Storage provisioning](app-storage-provisioning.md) — transient setup errors can clear on retry; use presigned uploads once the bucket is provisioned.
